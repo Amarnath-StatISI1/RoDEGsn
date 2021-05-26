@@ -1,2 +1,90 @@
-# RoDEGsn
-Robust methods for finding differentially expressed genes based on Minimum Density Power Divergence Estimator applied to Skew-normal (SN) distributions
+## RoDEGsn
+Robust modeling of noisy miRNA expression data based on expression values for finding deferentially expressed genes
+
+## Introduction
+RoDEGsn- A parametric approach to find the deferentially expressed miRNAs where the distributions of the expression values are moderately skewed. Here, the inherent model used is based on the famous skew normal (SN) distribution, which includes the both symmetric and skewed classes. This function takes the log transformed and normalized expression values along with the tuning parameter $\alpha$ and return the top $d$ miRNAs along with the corresponding adjusted p-values.
+
+## Installation of required packages
+
+Here we have used R 3.6.1. First we have to download packages from Bioconductor. In this connection, we have to install "BiocManager" at first and then proceed as follows to install "limma","Biobase" and "Geoquery". Note that "BiocManager" is available for R version 3.6 and above, so we must have R version 3.6 and above.
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("limma")
+BiocManager::install("Biobase")
+BiocManager::install("GEOquery")
+```
+Besides these, we have to install the following package also:
+```r
+utils::install.packages("sn")
+```
+
+## Loading of required packages
+Before running the program, we have to load the following packages
+```r
+library(limma)
+library(Biobase)
+library(GEOquery)
+library(sn)
+library(MASS)
+library(doParallel)
+```
+
+## Loading the required data set
+
+Here we have used Mice tumor data (Accession number- GSE53388) as example. We have run the following code to load the data from GEO website:
+
+```r
+#load series and platform data from GEO
+
+gset=getGEO("GSE53388", GSEMatrix =TRUE, AnnotGPL=TRUE)
+if (length(gset) > 1) idx =grep("GPL1261", attr(gset, "names")) 
+else idx=1
+gset=gset[[idx]]
+
+# make proper column names to match toptable 
+fvarLabels(gset)=make.names(fvarLabels(gset))
+
+# group names for all samples
+
+gsms <- "111111111111111111000000000000000000"
+sml=c()
+for (i in 1:nchar(gsms)) 
+{ sml[i]=substr(gsms,i,i) 
+}
+```
+
+## Data preprocessing
+Here we have used log transformation and quantile normalization for filtering the data.
+```r
+ex=exprs(gset)
+qx=as.numeric(quantile(ex, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
+LogC=(qx[5] > 100) ||
+  (qx[6]-qx[1] > 50 && qx[2] > 0) ||
+  (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
+if (LogC) { ex[which(ex <= 0)]=NaN
+exprs(gset)=log2(ex) }
+
+```
+##Output
+
+```r
+gd=c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+ex_gp1=ex[,which(gd==1)]
+ex_gp2=ex[,which(gd==0)]
+p_val05=rep(0,500)
+
+
+ncores=detectCores()
+cl=makeCluster(ncores-2)
+registerDoParallel(cl)
+p_val05=foreach(i=1:500,.combine=rbind,.packages = c("MASS","sn")) %dopar%
+  {
+    source("Two sample MDPDE sn.R");
+    p_val05[i]=dg_dpd(g1=ex_gp1[i,],g2=ex_gp2[i,],alpha=0.5)
+  }
+stopCluster(cl)
+p_val05[1:5]
+```
