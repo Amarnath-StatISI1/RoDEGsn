@@ -68,23 +68,27 @@ if (LogC) { ex[which(ex <= 0)]=NaN
 exprs(gset)=log2(ex) }
 
 ```
-##Output
+## Application of RoDEGsn
+Here, we have applied our method to the first 500 genes of the data and summarized the adjusted p-value of the top 10 genes. We have considered tuning parameter $\alpha=0.5$. 
 
 ```r
 gd=c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
 ex_gp1=ex[,which(gd==1)]
 ex_gp2=ex[,which(gd==0)]
 p_val05=rep(0,500)
-
-
-ncores=detectCores()
-cl=makeCluster(ncores-2)
-registerDoParallel(cl)
-p_val05=foreach(i=1:500,.combine=rbind,.packages = c("MASS","sn")) %dopar%
-  {
-    source("Two sample MDPDE sn.R");
-    p_val05[i]=dg_dpd(g1=ex_gp1[i,],g2=ex_gp2[i,],alpha=0.5)
-  }
-stopCluster(cl)
-p_val05[1:5]
+result=RoDEGsn(ex[1:500,],gd,10,0.5)
+```
+## Output
+```r
+ result
+                     p_adj
+1415737_at    1.749096e-39
+1415777_at    8.665615e-38
+1415783_at    5.471823e-36
+1415806_at    2.901688e-34
+1415817_s_at  6.738432e-33
+1415862_at    3.750261e-31
+1415740_at   4.457271e-28
+1415676_a_at 8.229201e-24
+1415696_at   2.442977e-18
 ```
