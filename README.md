@@ -1,14 +1,3 @@
-# RoDEGsn
-Robust methods for finding differentially expressed genes based on Minimum Density Power Divergence Estimator applied to Skew-normal (SN) distributions
----
-title: ""
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## RoDEGsn
 Robust modeling of noisy miRNA expression data based on expression values for finding deferentially expressed genes
 
